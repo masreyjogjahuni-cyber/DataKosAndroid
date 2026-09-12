@@ -18,13 +18,11 @@ jobs:
         run: |
           ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
           if [ -z "$ZIP_FILE" ]; then
-            echo "::error::File zip tidak ditemukan di root repositori!"
+            echo "::error::File zip tidak ditemukan!"
             exit 1
           fi
           echo "Unzipping $ZIP_FILE..."
           unzip -o "$ZIP_FILE" -d extracted
-          echo "--- Struktur folder hasil ekstrak ---"
-          find extracted -maxdepth 3
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -35,6 +33,43 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Build APK with Gradle
+        run: |
+          # Cari letak file settings.gradle / settings.gradle.kts
+          SETTINGS_PATH=$(find extracted -name "settings.gradle.kts" -o -name "settings.gradle" | head -1)
+          
+          if [ -z "$SETTINGS_PATH" ]; then
+            echo "::error::File settings.gradle(.kts) TIDAK DITEMUKAN di dalam ZIP!"
+            echo "Isi folder extracted saat ini:"
+            find extracted
+            exit 1
+          fi
+
+          ROOT_DIR=$(dirname "$SETTINGS_PATH")
+          echo "=========================================="
+          echo "Lokasi Proyek Android: $ROOT_DIR"
+          echo "=========================================="
+          
+          cd "$ROOT_DIR"
+          
+          # Lisensi Android SDK
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          
+          # Jalankan build
+          if [ -f "./gradlew" ]; then
+            chmod +x gradlew
+            ./gradlew assembleDebug --stacktrace
+          else
+            gradle assembleDebug --stacktrace
+          fi
+
+      - name: Find & Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jogjahuni-APK
+          path: '**/*.apk'
+          if-no-files-found: error
+          
       - name: Build APK with Gradle
         run: |
           SETTINGS_FILE=$(find extracted -name "settings.gradle.kts" -o -name "settings.gradle" | head -1)
