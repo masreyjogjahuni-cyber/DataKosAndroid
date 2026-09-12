@@ -11,17 +11,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Extract Project
+      - name: Extract ZIP File
         run: |
           ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
           if [ -z "$ZIP_FILE" ]; then
-            echo "::error::File zip tidak ditemukan!"
+            echo "::error::File ZIP tidak ditemukan di root repositori!"
             exit 1
           fi
-          echo "Unzipping $ZIP_FILE..."
+          echo "Memuat $ZIP_FILE..."
           unzip -o "$ZIP_FILE" -d extracted
 
       - name: Set up JDK 17
@@ -30,51 +30,15 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-      - name: Build APK with Gradle
+      - name: Build Debug APK
         run: |
-          # Cari letak file settings.gradle / settings.gradle.kts
-          SETTINGS_PATH=$(find extracted -name "settings.gradle.kts" -o -name "settings.gradle" | head -1)
-          
-          if [ -z "$SETTINGS_PATH" ]; then
-            echo "::error::File settings.gradle(.kts) TIDAK DITEMUKAN di dalam ZIP!"
-            echo "Isi folder extracted saat ini:"
-            find extracted
-            exit 1
-          fi
-
-          ROOT_DIR=$(dirname "$SETTINGS_PATH")
-          echo "=========================================="
-          echo "Lokasi Proyek Android: $ROOT_DIR"
-          echo "=========================================="
-          
-          cd "$ROOT_DIR"
-          
-          # Lisensi Android SDK
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          
-          # Jalankan build
-          if [ -f "./gradlew" ]; then
-            chmod +x gradlew
-            ./gradlew assembleDebug --stacktrace
-          else
-            gradle assembleDebug --stacktrace
-          fi
-
-      - name: Find & Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Jogjahuni-APK
-          path: '**/*.apk'
-          if-no-files-found: error
-          
-      - name: Build APK with Gradle
-        run: |
+          # Cari folder yang berisi settings.gradle.kts / settings.gradle
           SETTINGS_FILE=$(find extracted -name "settings.gradle.kts" -o -name "settings.gradle" | head -1)
           if [ -z "$SETTINGS_FILE" ]; then
-            echo "::error::File settings.gradle(.kts) tidak ditemukan di dalam ZIP!"
+            echo "::error::File settings.gradle.kts tidak ditemukan di dalam proyek ZIP!"
             exit 1
           fi
           
@@ -85,19 +49,13 @@ jobs:
           # Lisensi Android SDK
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
           
-          # Jalankan Gradle Build
-          if [ -f "./gradlew" ]; then
-            chmod +x gradlew
-            ./gradlew assembleDebug --stacktrace --full-stacktrace
-          else
-            gradle assembleDebug --stacktrace --full-stacktrace
-          fi
+          # Eksekusi kompilasi APK
+          gradle assembleDebug --no-daemon --stacktrace
 
-      - name: Find & Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Jogjahuni-APK
-          path: |
-            extracted/**/*.apk
+          path: extracted/**/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           
