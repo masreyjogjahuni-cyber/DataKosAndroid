@@ -38,38 +38,17 @@ jobs:
           PROJECT_DIR=$(dirname "$(find extracted -name settings.gradle.kts -o -name settings.gradle | head -1)")
           cd "$PROJECT_DIR"
           
-          # Beri izin eksekusi ke gradlew jika ada
           if [ -f "gradlew" ]; then
             chmod +x gradlew
-            ./gradlew assembleDebug --no-daemon --stacktrace
+            ./gradlew assembleDebug --no-daemon
           else
-            gradle assembleDebug --no-daemon --stacktrace
+            gradle assembleDebug --no-daemon
           fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Jogjahuni-APK
-          path: extracted/**/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-          
-      - name: Build APK
-        run: |
-          PROJECT_DIR=$(dirname "$(find extracted -name settings.gradle.kts -o -name settings.gradle | head -1)")
-          cd "$PROJECT_DIR"
-          gradle assembleDebug --no-daemon
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Jogjahuni-APK
-          path: extracted/**/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-          
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Jogjahuni-APK
-          path: extracted/**/build/outputs/apk/debug/*.apk
+          path: '**/build/outputs/apk/debug/*.apk'
           if-no-files-found: error
           
