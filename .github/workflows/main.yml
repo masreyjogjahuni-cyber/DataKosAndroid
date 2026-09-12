@@ -1,1 +1,68 @@
+name: Build Jogjahuni APK
 
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract Project
+        run: |
+          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "::error::File zip tidak ditemukan di root repositori!"
+            exit 1
+          fi
+          echo "Unzipping $ZIP_FILE..."
+          unzip -o "$ZIP_FILE" -d extracted
+          echo "--- Struktur folder hasil ekstrak ---"
+          find extracted -maxdepth 3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build APK with Gradle
+        run: |
+          SETTINGS_FILE=$(find extracted -name "settings.gradle.kts" -o -name "settings.gradle" | head -1)
+          if [ -z "$SETTINGS_FILE" ]; then
+            echo "::error::File settings.gradle(.kts) tidak ditemukan di dalam ZIP!"
+            exit 1
+          fi
+          
+          PROJECT_DIR=$(dirname "$SETTINGS_FILE")
+          echo "Folder Proyek Ditemukan di: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          
+          # Lisensi Android SDK
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          
+          # Jalankan Gradle Build
+          if [ -f "./gradlew" ]; then
+            chmod +x gradlew
+            ./gradlew assembleDebug --stacktrace --full-stacktrace
+          else
+            gradle assembleDebug --stacktrace --full-stacktrace
+          fi
+
+      - name: Find & Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jogjahuni-APK
+          path: |
+            extracted/**/*.apk
+          if-no-files-found: error
+          
