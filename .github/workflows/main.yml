@@ -30,11 +30,29 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Gradle
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
 
+      - name: Fix Permissions & Build APK
+        run: |
+          PROJECT_DIR=$(dirname "$(find extracted -name settings.gradle.kts -o -name settings.gradle | head -1)")
+          cd "$PROJECT_DIR"
+          
+          # Beri izin eksekusi ke gradlew jika ada
+          if [ -f "gradlew" ]; then
+            chmod +x gradlew
+            ./gradlew assembleDebug --no-daemon --stacktrace
+          else
+            gradle assembleDebug --no-daemon --stacktrace
+          fi
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jogjahuni-APK
+          path: extracted/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          
       - name: Build APK
         run: |
           PROJECT_DIR=$(dirname "$(find extracted -name settings.gradle.kts -o -name settings.gradle | head -1)")
