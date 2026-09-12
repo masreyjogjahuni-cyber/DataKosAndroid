@@ -1,4 +1,4 @@
-name: Build DataKos APK
+name: Build Jogjahuni APK
 
 on:
   workflow_dispatch:
@@ -16,8 +16,7 @@ jobs:
 
       - name: Extract Android project
         run: |
-          unzip -o DataKosAndroid_project.zip -d extracted
-          find extracted -maxdepth 4 -type f | head -100
+          unzip -o Jogjahuni_project.zip -d extracted
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -33,17 +32,13 @@ jobs:
       - name: Build APK
         run: |
           PROJECT_DIR=$(dirname "$(find extracted -name settings.gradle.kts -o -name settings.gradle | head -1)")
-          echo "Project directory: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           gradle assembleDebug --no-daemon
-
-      - name: Find APK
-        run: |
-          find extracted -type f -name "*.apk" -print
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DataKos-APK
+          name: Jogjahuni-APK
           path: extracted/**/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          
