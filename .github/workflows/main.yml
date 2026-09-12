@@ -17,8 +17,7 @@ jobs:
       - name: Extract Android project
         run: |
           unzip -o DataKosAndroid_project.zip -d extracted
-          ls -la extracted
-          find extracted -maxdepth 3 -type f | head -50
+          find extracted -maxdepth 4 -type f | head -100
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -26,14 +25,25 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
       - name: Build APK
-        working-directory: extracted/DataKosAndroid
         run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          PROJECT_DIR=$(dirname "$(find extracted -name settings.gradle.kts -o -name settings.gradle | head -1)")
+          echo "Project directory: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          gradle assembleDebug --no-daemon
+
+      - name: Find APK
+        run: |
+          find extracted -type f -name "*.apk" -print
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DataKos-debug
-          path: extracted/DataKosAndroid/app/build/outputs/apk/debug/app-debug.apk
+          name: DataKos-APK
+          path: extracted/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
