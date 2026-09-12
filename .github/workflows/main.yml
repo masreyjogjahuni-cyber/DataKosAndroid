@@ -16,7 +16,13 @@ jobs:
 
       - name: Extract Android project
         run: |
-          unzip -o Jogjahuni_project.zip -d extracted
+          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "Error: File zip tidak ditemukan!"
+            exit 1
+          fi
+          echo "Extracting $ZIP_FILE..."
+          unzip -o "$ZIP_FILE" -d extracted
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -35,6 +41,13 @@ jobs:
           cd "$PROJECT_DIR"
           gradle assembleDebug --no-daemon
 
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jogjahuni-APK
+          path: extracted/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
