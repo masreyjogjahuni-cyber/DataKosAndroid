@@ -30,15 +30,16 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle
+      - name: Setup Gradle 8.7
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
 
       - name: Build Debug APK
         run: |
-          # Cari folder yang berisi settings.gradle.kts / settings.gradle
           SETTINGS_FILE=$(find extracted -name "settings.gradle.kts" -o -name "settings.gradle" | head -1)
           if [ -z "$SETTINGS_FILE" ]; then
-            echo "::error::File settings.gradle.kts tidak ditemukan di dalam proyek ZIP!"
+            echo "::error::File settings.gradle.kts tidak ditemukan di dalam ZIP!"
             exit 1
           fi
           
@@ -46,11 +47,9 @@ jobs:
           echo "Folder Proyek Ditemukan di: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           
-          # Lisensi Android SDK
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
           
-          # Eksekusi kompilasi APK
-          gradle assembleDebug --no-daemon --stacktrace
+          gradle assembleDebug --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
